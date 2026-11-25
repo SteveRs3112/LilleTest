@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0826">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lille">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Lille, 4 et 5 décembre</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800;900&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  /* ---------- Jetons ---------- */
+  :root {
+    --bg: #F2F1FA;
+    --surface: #FFFFFF;
+    --surface-2: #EAE8F6;
+    --ink: #120D36;
+    --muted: #5C5786;
+    --line: #DAD6F0;
+    --day: #0090B5;
+    --dusk: #6A4CF5;
+    --night: #DB1170;
+    --shadow: 0 1px 2px rgba(18,13,54,.06), 0 14px 34px rgba(18,13,54,.09);
+    --nav-h: 0px;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0B0826;
+      --surface: #151041;
+      --surface-2: #1F1857;
+      --ink: #F3F1FF;
+      --muted: #A9A3D8;
+      --line: #2B2470;
+      --day: #22DCFF;
+      --dusk: #A08CFF;
+      --night: #FF3D96;
+      --shadow: 0 0 0 1px rgba(255,255,255,.05) inset, 0 18px 40px rgba(0,0,0,.45);
+      color-scheme: dark;
+    }
+  }
+  /* Chaque jour a sa lumière : la nuit électrique du vendredi, le matin ambré du samedi */
+  body[data-day="ven"] { --h1: #13C7EE; --h2: #6A4CF5; --h3: #F0157A; --grad: linear-gradient(100deg, #7CF1FF, #FFFFFF 35%, #C8BCFF 60%, #FF6FB5); }
+  body[data-day="sam"] { --h1: #FFB020; --h2: #FF5A5F; --h3: #7B4CF5; --grad: linear-gradient(100deg, #FFE08A, #FFFFFF 35%, #FFB3A1 60%, #C9B6FF); }
+
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: calc(env(safe-area-inset-top, 0px) + 90px); }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 500 16px/1.55 Manrope, system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px);
+    z-index: 1000; background: #0B0826;
+  }
+  a { color: inherit; }
+  button { font: inherit; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative; overflow: hidden; isolation: isolate;
+    background: #0B0826; color: #fff; padding: 36px 22px 108px;
+  }
+  .blob { position: absolute; border-radius: 50%; filter: blur(70px); z-index: -1; transition: background .8s ease; }
+  .b1 { width: 460px; height: 460px; background: var(--h1); top: -230px; left: -170px; opacity: .72; }
+  .b2 { width: 420px; height: 420px; background: var(--h2); top: -50px; right: -130px; opacity: .78; }
+  .b3 { width: 540px; height: 540px; background: var(--h3); bottom: -380px; left: 28%; opacity: .7; }
+  .hero::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; opacity: .16;
+    background-image: radial-gradient(rgba(255,255,255,.9) 1px, transparent 1.2px);
+    background-size: 22px 22px;
+    -webkit-mask-image: linear-gradient(#000, transparent 85%); mask-image: linear-gradient(#000, transparent 85%);
+  }
+  .hero-inner { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+  h1 {
+    margin: 0; font: 900 clamp(84px, 24vw, 230px)/.8 Unbounded, system-ui, sans-serif; letter-spacing: -.06em;
+    background: var(--grad); background-size: 220% 100%;
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  /* Sélecteur de jour : deux billets */
+  .days { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; max-width: 520px; }
+  .day-btn {
+    position: relative; text-align: left; cursor: pointer; color: #fff;
+    border: 1px solid rgba(255,255,255,.22); border-radius: 22px; padding: 14px 16px 15px;
+    background: rgba(255,255,255,.08); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px 12px;
+    transition: background .25s, border-color .25s, transform .15s;
+  }
+  .day-btn:active { transform: scale(.98); }
+  .day-num { grid-row: span 2; font: 900 44px/1 Unbounded, sans-serif; letter-spacing: -.04em; }
+  .day-name { font: 800 16px/1.1 Manrope, sans-serif; }
+  .day-sub { font-size: 13px; opacity: .75; font-weight: 600; }
+  .day-btn[aria-pressed="true"] { background: #fff; color: #120D36; border-color: #fff; }
+  .day-btn[aria-pressed="true"] .day-num { background: linear-gradient(135deg, var(--h1), var(--h2) 50%, var(--h3)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .status {
+    display: flex; align-items: center; gap: 14px; max-width: 640px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-radius: 22px; padding: 14px 18px;
+  }
+  .status-big { font: 800 clamp(30px, 8vw, 44px)/1 Unbounded, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .status p { margin: 0; font-weight: 700; }
+
+  /* ---------- Navigation ---------- */
+  .nav-wrap { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 900; margin-top: -32px; padding: 0 16px; }
+  .nav {
+    position: relative; max-width: 620px; margin: 0 auto; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    background: var(--surface); border-radius: 999px; padding: 6px; box-shadow: var(--shadow);
+  }
+  .nav .pill {
+    position: absolute; top: 6px; bottom: 6px; left: 0; width: 0; border-radius: 999px;
+    background: linear-gradient(110deg, var(--h1), var(--h2) 55%, var(--h3));
+    transition: transform .38s cubic-bezier(.3,.9,.3,1), width .38s cubic-bezier(.3,.9,.3,1);
+  }
+  .tab {
+    position: relative; z-index: 1; border: 0; background: transparent; cursor: pointer; color: var(--muted);
+    font: 800 14.5px/1 Manrope, sans-serif; padding: 12px 4px; border-radius: 999px;
+    display: flex; flex-direction: column; align-items: center; gap: 5px; transition: color .25s;
+  }
+  .tab svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .tab[aria-selected="true"] { color: #fff; }
+  @media (min-width: 761px) { .tab { flex-direction: row; justify-content: center; gap: 8px; padding: 14px 8px; } }
+  /* Sur téléphone, la navigation devient une barre flottante en bas, à portée de pouce */
+  @media (max-width: 760px) {
+    :root { --nav-h: 86px; }
+    .hero { padding-bottom: 30px; }
+    .nav-wrap { position: fixed; top: auto; bottom: 0; left: 0; right: 0; margin: 0; padding: 0 12px calc(10px + env(safe-area-inset-bottom, 0px)); }
+    .nav { box-shadow: 0 10px 40px rgba(11,8,38,.35); border: 1px solid var(--line); }
+    .tab { font-size: 11.5px; padding: 9px 2px 8px; }
+  }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 36px 18px calc(56px + var(--nav-h)); }
+  .panel[hidden] { display: none; }
+  .section-head { max-width: 760px; margin: 0 0 22px; }
+  .section-head h2 { font: 800 clamp(26px, 6vw, 40px)/1.05 Unbounded, sans-serif; letter-spacing: -.035em; margin: 0 0 8px; }
+  .section-head p { margin: 0; color: var(--muted); max-width: 60ch; }
+  .centered { max-width: 760px; margin-left: auto; margin-right: auto; }
+  .t-day { --tone: var(--day); } .t-dusk { --tone: var(--dusk); } .t-night { --tone: var(--night); }
+
+  /* ---------- Timing ---------- */
+  ol.timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+  ol.timeline::before {
+    content: ""; position: absolute; left: 21px; top: 26px; bottom: 26px; width: 4px; border-radius: 4px;
+    background: linear-gradient(var(--day), var(--dusk) 55%, var(--night));
+  }
+  body[data-day="sam"] ol.timeline::before { background: linear-gradient(var(--day), var(--dusk)); }
+  .step { display: grid; grid-template-columns: 46px 1fr; gap: 14px; padding: 9px 0; }
+  .node {
+    width: 46px; height: 46px; border-radius: 50%; background: var(--bg); position: relative; z-index: 1;
+    display: grid; place-items: center; font: 800 14px/1 Unbounded, sans-serif; color: var(--tone);
+  }
+  .node::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; border: 3px solid var(--tone); z-index: -1; }
+  .step.done .node, .step.now .node { color: #fff; }
+  .step.done .node::before { background: var(--tone); }
+  .step.now .node::before { background: var(--tone); box-shadow: 0 0 0 8px color-mix(in srgb, var(--tone) 22%, transparent), 0 0 24px var(--tone); }
+
+  .card { position: relative; overflow: hidden; background: var(--surface); border-radius: 26px; padding: 18px 20px; box-shadow: var(--shadow); }
+  .step.now .card { outline: 2px solid var(--tone); }
+  .step.done .card { opacity: .5; }
+  .card-body { display: grid; grid-template-columns: 84px 1fr; gap: 16px; align-items: start; }
+  .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .moment { margin: 0; font-weight: 800; color: var(--tone); font-size: 14px; }
+  .time { font: 800 26px/1 Unbounded, sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .card h3 { font: 800 22px/1.15 Unbounded, sans-serif; letter-spacing: -.02em; margin: 8px 0 0; }
+  .card h3.tbd { color: var(--night); }
+  .addr { margin: 5px 0 0; font-size: 14px; color: var(--muted); }
+  .note { margin: 10px 0 0; font-size: 15px; }
+  .booked {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    font: 800 12.5px/1 Manrope, sans-serif; padding: 7px 10px; border-radius: 10px;
+    background: color-mix(in srgb, #1DB97A 16%, var(--surface)); color: #12925F;
+  }
+  @media (prefers-color-scheme: dark) { .booked { color: #4FE3A6; } }
+  .alert {
+    margin: 12px 0 0; padding: 12px 14px; border-radius: 16px; font-size: 14px;
+    background: color-mix(in srgb, var(--tone) 12%, var(--surface)); border-left: 4px solid var(--tone);
+  }
+  .alert strong { display: block; margin-bottom: 4px; }
+  .alert ul { margin: 0; padding-left: 18px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+  .thumb {
+    width: 84px; height: 84px; border-radius: 22px; overflow: hidden; display: grid; place-items: center;
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255,255,255,.35), transparent 55%),
+      linear-gradient(145deg, var(--tone), color-mix(in srgb, var(--tone) 35%, #0B0826));
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--tone) 35%, transparent);
+  }
+  .thumb svg { width: 46px; height: 46px; fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  @media (max-width: 460px) {
+    .card { padding: 16px; }
+    .card-body { grid-template-columns: 60px 1fr; gap: 12px; }
+    .thumb { width: 60px; height: 60px; border-radius: 17px; }
+    .thumb svg { width: 32px; height: 32px; }
+    .card h3 { font-size: 19px; }
+    .time { font-size: 21px; }
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; border: 0; cursor: pointer; text-decoration: none;
+    font: 800 13.5px/1 Manrope, sans-serif; padding: 10px 14px; border-radius: 999px;
+    background: var(--surface-2); color: var(--ink); transition: transform .15s;
+  }
+  .btn:active { transform: scale(.96); }
+  .btn.primary { background: var(--ink); color: var(--bg); }
+  .btn.ta { background: #34E0A1; color: #00291B; }
+  .btn.check[aria-pressed="true"] { background: var(--tone); color: #fff; }
+  .btn:focus-visible, .tab:focus-visible, .day-btn:focus-visible, .stop-btn:focus-visible, .chip-btn:focus-visible,
+  input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 3px solid var(--dusk); outline-offset: 2px; }
+
+  /* ---------- Plan ---------- */
+  .route-layout { display: grid; grid-template-columns: 1fr 360px; gap: 16px; height: min(78vh, 760px); min-height: 520px; }
+  .map-box { position: relative; border-radius: 30px; overflow: hidden; box-shadow: var(--shadow); background: var(--surface-2); }
+  #map { position: absolute; inset: 0; }
+  .map-badge {
+    position: absolute; z-index: 500; left: 14px; top: 14px; pointer-events: none;
+    background: rgba(11,8,38,.74); color: #fff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px; padding: 10px 14px; font-size: 13px; font-weight: 700;
+  }
+  .map-badge strong { font: 800 15px/1.2 Unbounded, sans-serif; display: block; }
+  .side { background: var(--surface); border-radius: 30px; box-shadow: var(--shadow); display: flex; flex-direction: column; overflow: hidden; }
+  .side-head { padding: 18px 20px 8px; }
+  .side-head h2 { margin: 0; font: 800 18px/1.2 Unbounded, sans-serif; }
+  .side-head p { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+  .side ol { list-style: none; margin: 0; padding: 4px 10px 12px; overflow-y: auto; flex: 1; }
+  .stop-btn {
+    width: 100%; text-align: left; display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center;
+    background: transparent; border: 0; color: var(--ink); cursor: pointer; padding: 10px; border-radius: 16px;
+  }
+  .stop-btn:hover { background: var(--surface-2); }
+  .stop-btn[aria-current="true"] { background: color-mix(in srgb, var(--tone) 16%, var(--surface)); }
+  .num { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--tone); color: #fff; font: 800 13px/1 Unbounded, sans-serif; }
+  .stop-name { font-weight: 800; font-size: 15px; line-height: 1.2; }
+  .stop-name small { display: block; font-weight: 600; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .stop-time { font: 800 14px/1 Unbounded, sans-serif; color: var(--tone); }
+  .stop-detail { padding: 2px 10px 12px 54px; }
+  .stop-detail .actions { margin-top: 6px; }
+  .mini-title { margin: 12px 0 6px; font-size: 12.5px; font-weight: 800; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font: 700 12.5px/1 Manrope, sans-serif; text-decoration: none; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); color: var(--ink); }
+  .hint { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+  @media (max-width: 900px) {
+    .route-layout { grid-template-columns: 1fr; height: auto; min-height: 0; }
+    .map-box { height: 56vh; min-height: 340px; }
+    .side ol { overflow: visible; }
+  }
+  .pin {
+    width: 36px; height: 36px; border-radius: 50% 50% 50% 4px; transform: rotate(-45deg);
+    display: grid; place-items: center; border: 3px solid #fff; background: var(--c);
+    box-shadow: 0 6px 16px rgba(0,0,0,.35);
+  }
+  .pin span { transform: rotate(45deg); color: #fff; font: 800 13px/1 Unbounded, sans-serif; }
+  .pin.active { box-shadow: 0 6px 16px rgba(0,0,0,.35), 0 0 0 8px color-mix(in srgb, var(--c) 35%, transparent); }
+  .leaflet-popup-content-wrapper { border-radius: 18px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+  .leaflet-popup-tip { background: var(--surface); }
+  .leaflet-popup-content { margin: 14px 16px; font: 600 14px/1.4 Manrope, sans-serif; }
+  .leaflet-popup-content strong { font: 800 15px/1.2 Unbounded, sans-serif; display: block; margin-bottom: 2px; }
+  .leaflet-control-zoom a { background: var(--surface) !important; color: var(--ink) !important; border-color: var(--line) !important; }
+  .leaflet-control-attribution { font-size: 10px; }
+
+  /* ---------- Bars et activités ---------- */
+  .toolbar { display: grid; gap: 12px; margin: 0 0 22px; }
+  .from {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    background: var(--surface); border-radius: 22px; padding: 12px 14px; box-shadow: var(--shadow);
+  }
+  .from label { font-weight: 800; font-size: 14px; }
+  .from select {
+    flex: 1 1 200px; font: 700 15px/1.2 Manrope, sans-serif; color: var(--ink); background: var(--surface-2);
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+  }
+  .geo-msg { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--muted); }
+  .geo-msg:empty { display: none; }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-btn {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+    font: 800 13.5px/1 Manrope, sans-serif; padding: 10px 14px; border-radius: 999px;
+  }
+  .chip-btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 16px; }
+  .tile { background: var(--surface); border-radius: 26px; padding: 18px; box-shadow: var(--shadow); display: grid; gap: 12px; align-content: start; }
+  .tile-head { display: grid; grid-template-columns: 60px 1fr; gap: 14px; align-items: center; }
+  .tile .thumb { width: 60px; height: 60px; border-radius: 17px; }
+  .tile .thumb svg { width: 32px; height: 32px; }
+  .tile h3 { margin: 0; font: 800 18px/1.2 Unbounded, sans-serif; letter-spacing: -.015em; }
+  .tile .where { margin: 3px 0 0; font-size: 13.5px; color: var(--muted); }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .badge { font: 800 12.5px/1 Manrope, sans-serif; padding: 7px 10px; border-radius: 10px; background: var(--surface-2); }
+  .badge.tone { background: color-mix(in srgb, var(--tone) 16%, var(--surface)); color: var(--tone); }
+  .badge.dist { background: var(--ink); color: var(--bg); }
+  .tile p.desc { margin: 0; font-size: 14.5px; }
+  .tile .actions { margin-top: 0; }
+  .empty { grid-column: 1 / -1; background: var(--surface); border-radius: 26px; padding: 24px; box-shadow: var(--shadow); }
+  .empty h3 { margin: 0 0 6px; font: 800 18px/1.2 Unbounded, sans-serif; }
+  .empty p { margin: 0; color: var(--muted); }
+  .source { margin: 22px 0 0; font-size: 13px; color: var(--muted); }
+
+  /* ---------- Modification ---------- */
+  dialog { border: 0; padding: 0; width: min(560px, 100%); max-width: 100%; margin: auto auto 0; border-radius: 30px 30px 0 0; background: var(--surface); color: var(--ink); }
+  @media (min-width: 640px) { dialog { margin: auto; border-radius: 30px; } }
+  dialog::backdrop { background: rgba(8,5,30,.6); backdrop-filter: blur(6px); }
+  dialog form { display: grid; gap: 12px; padding: 26px 22px calc(22px + env(safe-area-inset-bottom, 0px)); }
+  dialog h2 { font: 800 22px/1.2 Unbounded, sans-serif; margin: 0 0 4px; }
+  dialog label { display: grid; gap: 6px; font-size: 13px; font-weight: 800; color: var(--muted); }
+  input, textarea { font: 600 16px/1.4 Manrope, sans-serif; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; width: 100%; }
+  textarea { min-height: 72px; resize: vertical; }
+
+  footer { margin-top: 40px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; color: var(--muted); font-size: 14px; }
+
+  /* ---------- Mouvement : un seul moment fort, le titre ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    h1 { animation: sweep 2.4s cubic-bezier(.2,.8,.2,1) both; }
+    @keyframes sweep { from { background-position: 100% 0; opacity: 0; transform: translateY(18px); } 30% { opacity: 1; } to { background-position: 0 0; transform: none; } }
+    .step.now .node::before { animation: pulse 1.8s ease-in-out infinite; }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 14px transparent, 0 0 30px var(--tone); } }
+    ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .35s; }
+  }
+  @media (prefers-reduced-motion: reduce) { .nav .pill { transition: none; } }
+</style>
+</head>
+<body data-day="ven">
+<header class="hero">
+  <div class="blob b1" aria-hidden="true"></div>
+  <div class="blob b2" aria-hidden="true"></div>
+  <div class="blob b3" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <h1>Lille</h1>
+    <div class="days" role="group" aria-label="Choisir le jour">
+      <button type="button" class="day-btn" data-day="ven" aria-pressed="true">
+        <span class="day-num">4</span><span class="day-name">Vendredi</span><span class="day-sub">La journée et la nuit</span>
+      </button>
+      <button type="button" class="day-btn" data-day="sam" aria-pressed="false">
+        <span class="day-num">5</span><span class="day-name">Samedi</span><span class="day-sub">Brasserie et estaminet</span>
+      </button>
+    </div>
+    <div class="status">
+      <span class="status-big" id="big">--</span>
+      <p id="next"></p>
+    </div>
+  </div>
+</header>
+
+<div class="nav-wrap">
+  <nav class="nav" role="tablist" aria-label="Sections" id="nav">
+    <span class="pill" aria-hidden="true"></span>
+  </nav>
+</div>
+
+<main>
+  <section class="panel" id="timing" role="tabpanel" hidden>
+    <div class="centered"><ol class="timeline" id="timeline"></ol></div>
+  </section>
+
+  <section class="panel" id="itineraire" role="tabpanel" hidden>
+    <div class="route-layout">
+      <div class="map-box">
+        <div id="map" role="region" aria-label="Plan de Lille avec les étapes"></div>
+        <div class="map-badge" id="map-badge"></div>
+      </div>
+      <aside class="side" aria-label="Étapes de la journée">
+        <div class="side-head"><h2>La journée</h2><p>Touchez une étape pour la voir sur le plan.</p></div>
+        <ol id="side-list"></ol>
+      </aside>
+    </div>
+  </section>
+
+  <section class="panel" id="bars" role="tabpanel" hidden>
+    <div class="section-head">
+      <h2>Bars à proximité</h2>
+      <p>Une sélection de bars du Vieux-Lille et du centre, classés du plus proche au plus loin.</p>
+    </div>
+    <div class="toolbar">
+      <div class="from">
+        <label for="from-select">Autour de</label>
+        <select id="from-select"></select>
+        <button type="button" class="btn primary" id="locate">Me localiser</button>
+        <p class="geo-msg" id="geo-msg" role="status"></p>
+      </div>
+      <div class="chip-row" id="radius" aria-label="Distance maximale">
+        <button type="button" class="chip-btn" data-r="200" aria-pressed="false">200 m</button>
+        <button type="button" class="chip-btn" data-r="400" aria-pressed="false">400 m</button>
+        <button type="button" class="chip-btn" data-r="600" aria-pressed="true">600 m</button>
+        <button type="button" class="chip-btn" data-r="99999" aria-pressed="false">Tous</button>
+      </div>
+      <div class="chip-row" id="bar-types" aria-label="Type de bar">
+        <button type="button" class="chip-btn" data-t="all" aria-pressed="true">Tous les bars</button>
+        <button type="button" class="chip-btn" data-t="biere" aria-pressed="false">Bières</button>
+        <button type="button" class="chip-btn" data-t="cocktail" aria-pressed="false">Cocktails</button>
+        <button type="button" class="chip-btn" data-t="vin" aria-pressed="false">Vin</button>
+        <button type="button" class="chip-btn" data-t="festif" aria-pressed="false">Ambiance festive</button>
+      </div>
+    </div>
+    <div class="grid" id="bar-list"></div>
+    <p class="source">Horaires relevés en novembre 2026, à vérifier avant d’y aller.</p>
+  </section>
+
+  <section class="panel" id="activites" role="tabpanel" hidden>
+    <div class="section-head">
+      <h2>Activités</h2>
+      <p>Les incontournables de Lille et quelques idées pour un week-end entre amis, en pleine période de Noël.</p>
+    </div>
+    <div class="toolbar">
+      <div class="chip-row" id="act-types" aria-label="Type d’activité">
+        <button type="button" class="chip-btn" data-c="all" aria-pressed="true">Toutes</button>
+        <button type="button" class="chip-btn" data-c="culture" aria-pressed="false">Culture</button>
+        <button type="button" class="chip-btn" data-c="noel" aria-pressed="false">Noël</button>
+        <button type="button" class="chip-btn" data-c="balade" aria-pressed="false">Balades</button>
+        <button type="button" class="chip-btn" data-c="loin" aria-pressed="false">En métro</button>
+      </div>
+    </div>
+    <div class="grid" id="activity-list"></div>
+    <p class="source">Plus d’idées sur le site de l’office de tourisme : <a href="https://www.lilletourism.com/" target="_blank" rel="noopener">lilletourism.com</a>. Horaires et tarifs à confirmer avant de vous déplacer.</p>
+  </section>
+
+  <footer>
+    <button type="button" class="btn" id="reset">Revenir au planning d’origine</button>
+    <span>Les modifications restent sur cet appareil.</span>
+  </footer>
+</main>
+
+<dialog id="editor">
+  <form method="dialog" id="edit-form">
+    <h2 id="edit-title">Modifier</h2>
+    <label>Heure<input name="time" type="time" required></label>
+    <label>Lieu<input name="name" placeholder="Nom du lieu"></label>
+    <label>Adresse<input name="addr" placeholder="Rue, numéro"></label>
+    <label>Note<textarea name="note" placeholder="Réservation, métro, idée…"></textarea></label>
+    <label>Photo (facultatif)<input name="photo" type="url" placeholder="Lien d’une image, https://…"></label>
+    <div class="actions">
+      <button type="submit" class="btn primary" value="save">Enregistrer</button>
+      <button type="submit" class="btn" value="cancel" formnovalidate>Annuler</button>
+    </div>
+  </form>
+</dialog>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* =========================================================
+   Données
+   ========================================================= */
+const STORE_KEY = "lille-planning-v4";
+const ROUTE_KEY = "lille-routes-v2";
+
+const VEN_STEPS = [
+  { id: "parking", time: "11:30", moment: "Arrivée", name: "Parking métro CHU-Eurasanté", addr: "J25Q+6H Lille", plus: true, icon: "metro",
+    note: "Ligne 1 direction 4 Cantons, descendre à Rihour (environ 15 min). Le parking relais peut être complet en journée.", lat: 50.60806, lng: 3.03894 },
+  { id: "hotel", via: "metro", time: "12:15", moment: "Bagages", name: "Lille City Hotel", addr: "57 Rue de Béthune, 59800 Lille", icon: "valise",
+    note: "Dépôt des bagages à la bagagerie, la chambre est disponible à partir de 14h.", lat: 50.63350, lng: 3.06338 },
+  { id: "midi", time: "13:00", moment: "Midi", name: "Costaud", addr: "17 Place du Vieux Marché aux Chevaux, 59800 Lille", icon: "couverts",
+    booked: "Réservé à 13h via TheFork", note: "À deux pas de l’hôtel.", lat: 50.63266, lng: 3.06354,
+    ta: "https://www.tripadvisor.fr/Restaurant_Review-g187178-d26616999-Reviews-Costaud-Lille_Nord_Hauts_de_France.html" },
+  { id: "citadelle", time: "14:45", moment: "Après-midi", name: "Balade à la Citadelle", addr: "Citadelle de Lille", icon: "etoile",
+    note: "Tour par le bois de Boulogne et le bord de la Deûle.", lat: 50.64093, lng: 3.04458 },
+  { id: "gouter", time: "16:45", moment: "Goûter", name: "Gaufre chez Méert", addr: "27 Rue Esquermoise, 59000 Lille", icon: "gaufre",
+    note: "La gaufre fourrée à la vanille, spécialité historique de la maison. Métro Rihour.", lat: 50.63772, lng: 3.06199 },
+  { id: "apero", time: "18:30", moment: "Apéro", name: "La Capsule", addr: "25 Rue des Trois Mollettes, 59800 Lille", icon: "chope",
+    note: "Bar à bières artisanales, 28 bières à la pression.", lat: 50.64055, lng: 3.06019 },
+  { id: "diner", time: "21:15", moment: "Dîner", name: "La Cour de la Ch’tite Brigitte", addr: "61 Rue de la Monnaie, 59800 Lille", icon: "cloche",
+    booked: "Réservé à 21h15", note: "Salle sous verrière dans une cour intérieure.", lat: 50.64121, lng: 3.06235 },
+  { id: "digeo", time: "23:00", moment: "Digeo", name: "Maloot", addr: "3 Rue de la Barre, 59800 Lille", icon: "cocktail",
+    note: "Bar hi-fi : vinyles, cocktails et un vrai système son.", lat: 50.63882, lng: 3.05854 },
+  { id: "nuit", time: "00:00", moment: "Nuit", name: "Le Baron", addr: "30 Rue Pierre Mauroy, 59000 Lille", icon: "boule",
+    note: "Club techno, ouvre vers 23h45.", lat: 50.63655, lng: 3.06522 }
+];
+
+const SAM_STEPS = [
+  { id: "celestin", time: "11:00", moment: "Visite", name: "Brasserie Célestin", addr: "120 Rue Esquermoise, 59800 Lille", icon: "chope",
+    booked: "Visite réservée à 11h", mapLink: "https://maps.app.goo.gl/Pa3WAbnUKLrEVwQA8",
+    note: "Visite de la micro-brasserie puis dégustation de 3 bières artisanales.",
+    alert: { title: "Rendez-vous à 10h50", items: [
+      "Se présenter 10 minutes avant l’heure de la visite.",
+      "Les visites commencent à l’heure indiquée sur la réservation.",
+      "Aucun participant n’est accepté après 15 minutes de retard."
+    ] }, lat: 50.63891, lng: 3.05900 },
+  { id: "brigitte", time: "12:00", moment: "Déjeuner", name: "Estaminet La Ch’tite Brigitte", addr: "10 Rue des Bouchers, 59800 Lille", icon: "cloche",
+    booked: "Réservé à midi pile", note: "À environ 3 minutes à pied de la brasserie.", lat: 50.63848, lng: 3.05817 }
+];
+
+const DAYS = {
+  ven: { label: "Vendredi 4 décembre", date: [2026, 11, 4], steps: VEN_STEPS, tabs: ["timing", "itineraire", "bars", "activites"], barsFrom: "hotel",
+         soon: "C’est demain ! Rendez-vous à 11h30 au parking CHU-Eurasanté.", after: "Vendredi est passé, place à samedi !" },
+  sam: { label: "Samedi 5 décembre", date: [2026, 11, 5], steps: SAM_STEPS, tabs: ["timing", "activites", "bars"], barsFrom: "celestin",
+         soon: "C’est demain ! Rendez-vous à 10h50 devant la brasserie Célestin.", after: "Merci Lille, à la prochaine !" }
+};
+
+const TAB_INFO = {
+  timing: { label: "Timing", icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
+  itineraire: { label: "Itinéraire", icon: '<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/>' },
+  bars: { label: "Bars", icon: '<path d="M6 4h12l-6 8z"/><path d="M12 12v7M8 20h8"/>' },
+  activites: { label: "Activités", icon: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/>' }
+};
+
+/* Illustrations des vignettes (dessin au trait, 48×48) */
+const ICONS = {
+  metro: '<rect x="12" y="6" width="24" height="30" rx="7"/><path d="M12 22h24M18 30h.01M30 30h.01M16 36l-4 6M32 36l4 6M18 12h12"/>',
+  valise: '<rect x="9" y="15" width="30" height="24" rx="4"/><path d="M18 15v-5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5M9 25h30M16 39v3M32 39v3"/>',
+  couverts: '<path d="M15 6v14a4 4 0 0 0 4 4v18M11 6v10M19 6v10M32 42V6c-4 3-6 9-6 15 0 3 2 5 6 5"/>',
+  etoile: '<path d="M24 5l5 9 10-1-4 9 7 7-10 2-2 10-6-7-6 7-2-10-10-2 7-7-4-9 10 1z"/><circle cx="24" cy="24" r="5"/>',
+  gaufre: '<rect x="8" y="12" width="32" height="24" rx="6"/><path d="M8 20h32M8 28h32M16 12v24M24 12v24M32 12v24"/>',
+  chope: '<path d="M13 16h18v22a4 4 0 0 1-4 4h-10a4 4 0 0 1-4-4z"/><path d="M31 21h4a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-4M13 16a5 5 0 0 1 5-7 6 6 0 0 1 10 0 5 5 0 0 1 3 7M19 24v12M25 24v12"/>',
+  cloche: '<path d="M8 30h32M10 30a14 14 0 0 1 28 0M24 13v3M6 36h36"/><circle cx="24" cy="11" r="2"/>',
+  cocktail: '<path d="M10 9h28L24 26zM24 26v14M16 42h16M30 6l4-3"/><circle cx="31" cy="14" r="2"/>',
+  boule: '<circle cx="24" cy="25" r="13"/><path d="M24 6v6M11 25h26M24 12c-5 4-5 22 0 26M24 12c5 4 5 22 0 26M14 17h20M14 33h20"/>',
+  vin: '<path d="M16 6h16l-1 12a7 7 0 0 1-14 0zM24 25v15M17 42h14M16.5 14h15"/>',
+  musique: '<path d="M18 36V10l20-4v26"/><circle cx="13" cy="36" r="5"/><circle cx="33" cy="32" r="5"/>',
+  musee: '<path d="M6 18L24 7l18 11M9 18v18M17 18v18M31 18v18M39 18v18M5 40h38"/>',
+  sapin: '<path d="M24 5l9 13h-5l8 11h-6l7 10H11l7-10h-6l8-11h-5z"/><path d="M24 39v4"/>',
+  roue: '<circle cx="24" cy="21" r="14"/><circle cx="24" cy="21" r="2"/><path d="M24 7v28M10 21h28M14 11l20 20M34 11L14 31M17 43l7-20 7 20"/>',
+  beffroi: '<path d="M18 43V18l6-12 6 12v25M14 43h20M21 24h6M21 32h6"/><circle cx="24" cy="15" r="2"/>',
+  marche: '<path d="M7 18l4-10h26l4 10M7 18h34v4a5 5 0 0 1-10 0 5 5 0 0 1-7 0 5 5 0 0 1-7 0 5 5 0 0 1-10 0zM10 26v15h28V26"/>',
+  livre: '<path d="M24 12c-5-4-12-4-17-2v28c5-2 12-2 17 2 5-4 12-4 17-2V10c-5-2-12-2-17 2zM24 12v28"/>',
+  villa: '<path d="M6 40h36M10 40V22h16v18M26 30h12v10M10 22l8-8h18v16M30 18h4"/>',
+  piscine: '<path d="M6 30c3 0 3 2 6 2s3-2 6-2 3 2 6 2 3-2 6-2 3 2 6 2 3-2 6-2M6 38c3 0 3 2 6 2s3-2 6-2 3 2 6 2 3-2 6-2 3 2 6 2 3-2 6-2M16 26V10a4 4 0 0 1 8 0M32 26V10a4 4 0 0 0-8 0M16 16h16M16 22h16"/>',
+  gare: '<rect x="8" y="12" width="32" height="24" rx="3"/><path d="M8 20h32M16 36l-3 6M32 36l3 6M15 28h.01M33 28h.01M20 6h8"/>',
+  cathedrale: '<path d="M24 4v6M21 7h6M16 42V22l8-10 8 10v20M8 42V28l8-6M40 42V28l-8-6M6 42h36"/><path d="M21 42v-8a3 3 0 0 1 6 0v8"/>',
+  rues: '<path d="M10 42V14l8-6 8 6v28M26 42V20l6-5 6 5v22M6 42h36M15 22h6M15 30h6M30 26h4M30 33h4"/>',
+  maison: '<path d="M8 22L24 9l16 13M12 19v23h24V19"/><path d="M20 42V30h8v12"/>',
+  art: '<circle cx="24" cy="24" r="17"/><circle cx="17" cy="18" r="2.5"/><circle cx="26" cy="15" r="2.5"/><circle cx="32" cy="22" r="2.5"/><path d="M24 41a5 5 0 0 1 0-10 3 3 0 0 0 3-3"/>'
+};
+
+/* Bars : sélection du Vieux-Lille et du centre. Horaires du vendredi et du samedi en minutes (fermeture après minuit = au-delà de 1440). */
+const BARS = [
+  { name: "La Capsule", type: "biere", label: "Bar à bières", addr: "25 Rue des Trois Mollettes", lat: 50.64055, lng: 3.06019, ven: [1020, 1560], sam: [960, 1560],
+    desc: "28 bières à la pression, surtout locales, dont quelques lambics à la pompe. Grande cave voûtée en sous-sol pour les groupes." },
+  { name: "Beerchope", type: "biere", label: "Bar à bières", addr: "18 Rue de Gand", lat: 50.64156, lng: 3.06569, ven: [1020, 1560], sam: [930, 1560],
+    desc: "Une institution de la rue de Gand : bières du Nord à la pression, frigos bien garnis et ambiance rock des années 70." },
+  { name: "La Biche & le Renard", type: "biere", label: "Bar à bières craft", addr: "14 Rue de Gand", lat: 50.64149, lng: 3.06560, ven: [1020, 1560], sam: [960, 1560],
+    desc: "Bières de petites brasseries du monde entier, souvent en éditions limitées. Petit et chaleureux, déco chinée." },
+  { name: "Célestin", type: "biere", label: "Micro-brasserie", addr: "120 Rue Esquermoise", lat: 50.63891, lng: 3.05900, ven: [660, 1140], sam: [600, 1140],
+    desc: "La micro-brasserie de la visite du samedi. Boutique de bières maison, dégustation possible dans la salle de brassage." },
+  { name: "Café Society", type: "cocktail", label: "Cocktails et bières", addr: "1 bis Rue des Trois Couronnes", lat: 50.63730, lng: 3.06391, ven: [900, 1560], sam: [840, 1560],
+    desc: "Juste à côté de la Grand-Place : cocktails bien faits à prix doux, bonnes bières à la pression, étage réservable pour les groupes." },
+  { name: "Drops", type: "cocktail", label: "Cocktails de créateur", addr: "67 Rue Basse", lat: 50.63863, lng: 3.06034, ven: [1080, 1560], sam: [1020, 1560],
+    desc: "Cocktails inventifs servis avec humour, carte renouvelée régulièrement et petite cuisine au-dessus de la moyenne." },
+  { name: "La Barre", type: "cocktail", label: "Cocktails sur mesure", addr: "28 Rue de la Barre", lat: 50.63882, lng: 3.05730, ven: [1050, 1440], sam: [1050, 1440],
+    desc: "Courte carte, mais le vrai plaisir est la « carte blanche » : le barman compose un cocktail selon vos goûts." },
+  { name: "Maloot", type: "festif", label: "Bar hi-fi et vinyles", addr: "3 Rue de la Barre", lat: 50.63882, lng: 3.05854, ven: [1080, 1560], sam: [1080, 1560],
+    desc: "Votre digeo du vendredi. Vinyles, système son de haute volée et cocktails ; on peut proposer un disque au DJ." },
+  { name: "Vespero", type: "cocktail", label: "Cocktails et vins", addr: "11 Rue de Gand", lat: 50.64163, lng: 3.06554, ven: [1080, 1560], sam: [1020, 1560],
+    desc: "Comme un salon un peu excentrique : cocktails soignés, planches de charcuterie. Petit, mieux vaut réserver." },
+  { name: "Quai des Bananas", type: "cocktail", label: "Bar à cocktails", addr: "84 Rue Royale", lat: 50.64191, lng: 3.05669, ven: [1020, 1560], sam: [1020, 1560],
+    desc: "Une carte de cocktails immense et des « aquariums » à partager entre 3 et 10 personnes. Parfait à quatre." },
+  { name: "Angle 95", type: "cocktail", label: "Bar à cocktails", addr: "95 Rue Saint-André", lat: 50.64529, lng: 3.05651, ven: [1050, 1560], sam: [1050, 1560],
+    desc: "Cocktails maison dans un décor soigné. Ambiance lounge en début de soirée, plus dansante après 22h." },
+  { name: "Shelby Bar", type: "cocktail", label: "Bar secret", addr: "15 Rue Sainte-Anne", lat: 50.63552, lng: 3.06942, ven: [1080, 1560], sam: [1080, 1560],
+    desc: "Un speakeasy façon années 20 : il faut sonner pour entrer. Cocktails racontés comme des histoires, concerts certains soirs." },
+  { name: "Les Frères Pinard", type: "vin", label: "Bar à vin", addr: "26 Rue des Vieux Murs", lat: 50.64048, lng: 3.06083, ven: [660, 1440], sam: [660, 1440],
+    desc: "Grande carte de vins et planches à composer soi-même. Beaucoup de place, dedans comme en terrasse." },
+  { name: "Au Gré du Vin", type: "vin", label: "Bar à vin", addr: "20 Rue Pétérinck", lat: 50.64110, lng: 3.06159, ven: [735, 1350], sam: [660, 1350],
+    desc: "Une pépite cachée du Vieux-Lille : conseils sur mesure et salle sous verrière remplie de plantes." },
+  { name: "La Cave du Présentoir", type: "vin", label: "Vins nature", addr: "32 Rue Royale", lat: 50.63993, lng: 3.05818, ven: [1020, 1440], sam: [720, 1440],
+    desc: "Petit bar à vins nature, intime. On décrit ce qu’on aime, on goûte avant de choisir." },
+  { name: "Jacqueline", type: "vin", label: "Bar à vin", addr: "27 Rue de Gand", lat: 50.64213, lng: 3.06594, ven: [1080, 1560], sam: [1080, 1560],
+    desc: "Bar à vin élégant de la rue de Gand, belle sélection et beaux verres, conseils avisés." },
+  { name: "JaJa", type: "vin", label: "Planches et vins", addr: "36 Rue Saint-André", lat: 50.64409, lng: 3.05858, ven: [1080, 1440], sam: [1080, 1440],
+    desc: "Ambiance chic et cosy, nombreux vins au verre, fromages et charcuteries de qualité." },
+  { name: "Bibi’s Café", type: "festif", label: "Bar de la Grand-Place", addr: "30 Place du Général de Gaulle", lat: 50.63701, lng: 3.06399, ven: [840, 1500], sam: [660, 1500],
+    desc: "En plein cœur de la Grand-Place, équipe très accueillante, on vient pour un verre et on reste l’après-midi." },
+  { name: "Coucou", type: "festif", label: "Bar-terrasse", addr: "38 Place du Général de Gaulle", lat: 50.63729, lng: 3.06377, ven: [630, 1560], sam: [630, 1560],
+    desc: "Terrasse sur la Grand-Place, idéale pour regarder passer le monde du marché de Noël. Service parfois lent." },
+  { name: "Soultrain Café", type: "festif", label: "Cocktails et musique live", addr: "197 Boulevard de la Liberté", lat: 50.62994, lng: 3.06556, ven: [1050, 1560], sam: [1110, 1560],
+    desc: "Cocktails à prix sages, tapas et soirées musicales. Ambiance qui monte en fin de soirée." },
+  { name: "Omega x Hyde", type: "festif", label: "Bar DJ", addr: "37 Rue Masséna", lat: 50.63274, lng: 3.05512, ven: [1020, 1560], sam: [1080, 1560],
+    desc: "Rue Masséna, la rue des noctambules : DJ, prix raisonnables et équipe aux petits soins." },
+  { name: "Le Speakeasy", type: "festif", label: "Bar de quartier", addr: "47 Rue Masséna", lat: 50.63251, lng: 3.05515, ven: [1020, 1560], sam: [1020, 1560],
+    desc: "Le bar d’habitués de la rue Masséna, sans chichi. Bon point de départ pour une tournée des bars." }
+];
+const BAR_ICON = { biere: "chope", cocktail: "cocktail", vin: "vin", festif: "musique" };
+const BAR_TONE = { biere: "t-day", cocktail: "t-dusk", vin: "t-night", festif: "t-night" };
+
+/* Activités */
+const ACTIVITIES = [
+  { icon: "chope", tone: "t-dusk", cat: "culture", name: "Visite de la brasserie Célestin", where: "Micro-brasserie du Vieux-Lille",
+    when: "1 h, créneaux à réserver", price: "À partir de 16 €", reservedOn: "sam",
+    desc: "Visite guidée de la micro-brasserie et de ses 285 ans d’histoire, puis dégustation de 3 bières artisanales. Groupes de 16 maximum.",
+    link: "https://www.tripadvisor.fr/AttractionProductReview-g187178-d34686461-Historic_brewery_visit_beer_tastings_in_Lille-Lille_Nord_Hauts_de_France.html", linkLabel: "Réserver",
+    q: "Célestin 120 rue Esquermoise" },
+  { icon: "musee", tone: "t-dusk", cat: "culture", name: "Palais des Beaux-Arts", where: "Place de la République, métro République Beaux-Arts",
+    when: "Ven. 10h–18h, sam. 10h–18h", price: "À partir de 7 €",
+    desc: "L’un des plus grands musées de France. Jusqu’au 22 mars 2027, l’exposition « Voyage à l’anglaise » réunit Turner et les artistes du Grand Tour, avec la Tate Britain. Visite guidée des chefs-d’œuvre le samedi à 15h.",
+    link: "https://pba.lille.fr/", q: "Palais des Beaux-Arts" },
+  { icon: "sapin", tone: "t-night", cat: "noel", name: "Marché de Noël", where: "Place Rihour, métro Rihour",
+    when: "Tous les jours, jusqu’à 22h le samedi", price: "Gratuit",
+    desc: "Environ 90 chalets jusqu’au 30 décembre : vin chaud, gaufres, artisanat. À faire à la tombée de la nuit, quand tout s’illumine.", q: "Marché de Noël place Rihour" },
+  { icon: "roue", tone: "t-night", cat: "noel", name: "Grande Roue", where: "Grand-Place",
+    when: "Jusqu’à minuit le week-end", price: "Environ 7 €",
+    desc: "50 mètres de haut, vue sur la Grand-Place, la Vieille Bourse et les toits illuminés. Plus magique de nuit.", q: "Grande roue Grand Place" },
+  { icon: "rues", tone: "t-day", cat: "balade", name: "Flânerie dans le Vieux-Lille", where: "Rue de la Monnaie, place aux Oignons, rue Royale",
+    when: "À toute heure", price: "Gratuit",
+    desc: "Façades flamandes en brique et pierre, pavés, boutiques de créateurs. Partir de la Grand-Place et se perdre vers la cathédrale.", q: "Rue de la Monnaie" },
+  { icon: "cathedrale", tone: "t-day", cat: "culture", name: "Cathédrale Notre-Dame-de-la-Treille", where: "Place Gilleson, Vieux-Lille",
+    when: "En journée", price: "Gratuit",
+    desc: "Commencée au XIXe siècle et achevée en 1999, avec une étonnante façade contemporaine en marbre translucide.", q: "Cathédrale Notre-Dame-de-la-Treille" },
+  { icon: "livre", tone: "t-day", cat: "balade", name: "Vieille Bourse", where: "Grand-Place",
+    when: "Du mardi au dimanche", price: "Gratuit",
+    desc: "Joyau de la Renaissance flamande. Dans sa cour, bouquinistes et joueurs d’échecs : parfait entre deux visites.", q: "Vieille Bourse" },
+  { icon: "beffroi", tone: "t-day", cat: "culture", name: "Beffroi de l’Hôtel de Ville", where: "Place Augustin Laurent, métro Mairie de Lille",
+    when: "Horaires à vérifier, réservation conseillée", price: "Payant",
+    desc: "104 mètres, classé à l’Unesco. Un peu plus de 400 marches, puis une vue à 360° sur toute la métropole.", q: "Beffroi Hôtel de Ville" },
+  { icon: "maison", tone: "t-day", cat: "culture", name: "Maison natale de Charles de Gaulle", where: "Rue Princesse, Vieux-Lille",
+    when: "Horaires à vérifier", price: "Payant",
+    desc: "La maison bourgeoise où est né le Général en 1890, avec un parcours sur sa vie et son époque.", q: "Maison natale Charles de Gaulle" },
+  { icon: "gare", tone: "t-dusk", cat: "balade", name: "Gare Saint-Sauveur", where: "Boulevard Jean-Baptiste Lebas",
+    when: "Selon la programmation", price: "Souvent gratuit",
+    desc: "Ancienne gare de marchandises devenue lieu culturel : expositions, cinéma, bar-brasserie. Bonne option pour un verre décontracté.", q: "Gare Saint-Sauveur" },
+  { icon: "marche", tone: "t-day", cat: "balade", name: "Marché de Wazemmes", where: "Métro Wazemmes ou Gambetta",
+    when: "Dimanche 7h–14h", price: "Gratuit",
+    desc: "Le Lille populaire, l’un des plus grands marchés de France. Le dimanche, avec brocante et épices en plus.", q: "Marché de Wazemmes" },
+  { icon: "piscine", tone: "t-dusk", cat: "loin", name: "La Piscine", where: "Roubaix, métro ligne 2",
+    when: "Horaires à vérifier", price: "Payant",
+    desc: "Un musée d’art installé dans une piscine Art déco, avec le grand bassin conservé au milieu des sculptures. Spectaculaire.", q: "La Piscine musée Roubaix", far: true },
+  { icon: "art", tone: "t-dusk", cat: "loin", name: "LaM", where: "Villeneuve-d’Ascq, métro puis bus",
+    when: "Horaires à vérifier", price: "Payant",
+    desc: "Art moderne, art contemporain et l’une des plus belles collections d’art brut d’Europe, dans un parc de sculptures.", q: "LaM musée Villeneuve d'Ascq", far: true },
+  { icon: "villa", tone: "t-day", cat: "loin", name: "Villa Cavrois", where: "Croix, près de Roubaix",
+    when: "Du mardi au dimanche, 10h–18h", price: "11 €",
+    desc: "Villa moderniste des années 1930 signée Mallet-Stevens, entièrement restaurée. Pour les amateurs de design.", q: "Villa Cavrois Croix", far: true }
+];
+/* =========================================================
+   État et outils
+   ========================================================= */
+const enc = encodeURIComponent;
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+let day = "ven";
+let tab = "timing";
+let state = load();
+
+function freshDay(d) { return { steps: structuredClone(DAYS[d].steps), done: {} }; }
+function load() {
+  const out = { ven: freshDay("ven"), sam: freshDay("sam") };
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      for (const d of ["ven", "sam"]) if (saved[d] && Array.isArray(saved[d].steps)) out[d] = saved[d];
+    } else {
+      // Reprise des modifications faites dans la version précédente (vendredi seulement)
+      const old = JSON.parse(localStorage.getItem("lille-planning-v3") || "null");
+      if (old && Array.isArray(old.steps)) out.ven = { steps: old.steps, done: old.done || {} };
+    }
+  } catch (e) {}
+  // Les lieux d'origine reprennent leurs positions et informations à jour
+  for (const d of ["ven", "sam"]) {
+    out[d].steps.forEach(s => {
+      const def = DAYS[d].steps.find(x => x.id === s.id);
+      if (!def) return;
+      if (s.name === def.name || !s.name || ["Au Vieux de la Vieille"].includes(s.name)) {
+        Object.assign(s, { ...def, time: s.name === def.name ? s.time : def.time, photo: s.photo });
+      }
+    });
+    DAYS[d].steps.forEach(def => { if (!out[d].steps.some(s => s.id === def.id)) out[d].steps.push(structuredClone(def)); });
+  }
+  return out;
+}
+function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {} }
+
+/* ---------- Temps ---------- */
+function dayWindow(d) {
+  const [y, m, dd] = DAYS[d].date;
+  return [new Date(y, m, dd, 6, 0), new Date(y, m, dd + 1, 6, 0)];
+}
+function phase(d) { const n = new Date(), [a, b] = dayWindow(d); return n < a ? "avant" : n >= b ? "apres" : "jour"; }
+function daysLeft(d) { const t = new Date(); t.setHours(0, 0, 0, 0); const [y, m, dd] = DAYS[d].date; return Math.round((new Date(y, m, dd) - t) / 86400000); }
+function minutes(t) { const [h, m] = (t || "00:00").split(":").map(Number); const v = h * 60 + (m || 0); return h < 6 ? v + 1440 : v; }
+function nowMinutes(d) {
+  const p = phase(d); if (p === "avant") return -1; if (p === "apres") return 99999;
+  const n = new Date(); const v = n.getHours() * 60 + n.getMinutes(); return n.getHours() < 6 ? v + 1440 : v;
+}
+function tone(t) { const m = minutes(t); return m < 17 * 60 ? "t-day" : m < 21 * 60 ? "t-dusk" : "t-night"; }
+function toneColor(t) { return getComputedStyle(document.documentElement).getPropertyValue("--" + tone(t).slice(2)).trim(); }
+function hhmm(m) { m = ((m % 1440) + 1440) % 1440; const h = Math.floor(m / 60), mm = m % 60; return h + "h" + (mm ? String(mm).padStart(2, "0") : ""); }
+function sorted(d = day) { return [...state[d].steps].sort((a, b) => minutes(a.time) - minutes(b.time)); }
+const label = s => s.name || "Lieu à choisir";
+
+/* ---------- Distances ---------- */
+function meters(a, b) {
+  const R = 6371000, toR = x => x * Math.PI / 180;
+  const dLat = toR(b.lat - a.lat), dLng = toR(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a.lat)) * Math.cos(toR(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+// À pied, les rues allongent le trajet d'environ 30 % par rapport à la ligne droite ; on marche à 80 m/min
+const walkMin = m => Math.max(1, Math.round(m * 1.3 / 80));
+function fmtKm(m) { return m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`; }
+function fmtMin(sec) { const m = Math.max(1, Math.round(sec / 60)); return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")}`; }
+
+/* ---------- Liens ---------- */
+function place(s) { return s.plus ? s.addr : [s.name, s.addr].filter(Boolean).join(", "); }
+function mapUrl(s) { return s.mapLink || "https://www.google.com/maps/search/?api=1&query=" + enc(place(s)); }
+function taUrl(s) { return s.ta || "https://www.tripadvisor.fr/Search?q=" + enc(s.name + " Lille"); }
+function dirUrl(a, b, mode) { return `https://www.google.com/maps/dir/?api=1&origin=${enc(place(a))}&destination=${enc(place(b))}&travelmode=${mode}`; }
+function nearUrl(k, s) { return "https://www.google.com/maps/search/?api=1&query=" + enc(k + " près de " + place(s)); }
+
+function thumb(s) {
+  const svg = `<svg viewBox="0 0 48 48" aria-hidden="true">${ICONS[s.icon] || ICONS.couverts}</svg>`;
+  if (s.photo) return `<div class="thumb"><img src="${esc(s.photo)}" alt="${esc(label(s))}" loading="lazy" onerror="this.parentNode.innerHTML=this.dataset.fb" data-fb='${svg}'></div>`;
+  return `<div class="thumb">${svg}</div>`;
+}
+
+/* =========================================================
+   En-tête : jour, compteur
+   ========================================================= */
+function renderStatus() {
+  const steps = sorted(), n = nowMinutes(day), p = phase(day), big = $("big");
+  const upcoming = steps.find(s => !state[day].done[s.id] && minutes(s.time) > n);
+  let txt;
+  if (p === "avant") {
+    const j = daysLeft(day);
+    big.textContent = j <= 0 ? "J" : "J-" + j;
+    txt = j <= 1 ? DAYS[day].soon : `avant ${DAYS[day].label.toLowerCase()}.`;
+  } else if (p === "apres") {
+    big.textContent = "✓"; txt = DAYS[day].after;
+  } else {
+    const d = new Date();
+    big.textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+    txt = upcoming ? `Ensuite à ${upcoming.time} : ${label(upcoming)}.` : DAYS[day].after;
+  }
+  $("next").textContent = txt;
+}
+
+/* =========================================================
+   Navigation
+   ========================================================= */
+function buildNav() {
+  const nav = $("nav");
+  nav.querySelectorAll(".tab").forEach(b => b.remove());
+  DAYS[day].tabs.forEach(t => {
+    const b = document.createElement("button");
+    b.className = "tab"; b.setAttribute("role", "tab"); b.dataset.tab = t; b.id = "tab-" + t;
+    b.setAttribute("aria-controls", t);
+    b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${TAB_INFO[t].icon}</svg><span>${TAB_INFO[t].label}</span>`;
+    b.addEventListener("click", () => go(day, t));
+    nav.appendChild(b);
+  });
+}
+function movePill() {
+  const active = $("nav").querySelector('.tab[aria-selected="true"]'), pill = $("nav").querySelector(".pill");
+  if (!active) return;
+  pill.style.width = active.offsetWidth + "px";
+  pill.style.transform = `translateX(${active.offsetLeft}px)`;
+}
+function show(d, t) {
+  const dayChanged = d !== day;
+  day = d;
+  if (!DAYS[day].tabs.includes(t)) t = "timing";
+  tab = t;
+  document.body.dataset.day = day;
+  document.querySelectorAll(".day-btn").forEach(b => b.setAttribute("aria-pressed", b.dataset.day === day));
+  if (dayChanged || !$("nav").querySelector(".tab")) buildNav();
+  $("nav").querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === tab));
+  document.querySelectorAll(".panel").forEach(p => { p.hidden = p.id !== tab; p.setAttribute("aria-labelledby", "tab-" + p.id); });
+  renderStatus();
+  if (tab === "timing") renderTiming();
+  if (tab === "itineraire") { const first = !map; initMap(); renderSide(); drawMap(first || dayChanged); setTimeout(() => map && map.invalidateSize(), 60); }
+  if (tab === "bars") { fillFrom(dayChanged); renderBars(); }
+  if (tab === "activites") renderActivities();
+  requestAnimationFrame(movePill);
+}
+function go(d, t) {
+  const run = () => { history.replaceState(null, "", `#${d}-${t}`); show(d, t); };
+  if (d !== day && document.startViewTransition && !matchMedia("(prefers-reduced-motion: reduce)").matches) document.startViewTransition(run);
+  else run();
+}
+function fromHash() {
+  const [d, t] = location.hash.slice(1).split("-");
+  return [DAYS[d] ? d : defaultDay(), t || "timing"];
+}
+function defaultDay() { return phase("ven") === "apres" ? "sam" : "ven"; }
+document.querySelectorAll(".day-btn").forEach(b => b.addEventListener("click", () => go(b.dataset.day, tab)));
+window.addEventListener("hashchange", () => show(...fromHash()));
+window.addEventListener("resize", movePill);
+
+/* =========================================================
+   Timing
+   ========================================================= */
+function renderTiming() {
+  const steps = sorted(), n = nowMinutes(day);
+  let currentId = null; steps.forEach(s => { if (minutes(s.time) <= n) currentId = s.id; });
+  const hasMap = DAYS[day].tabs.includes("itineraire");
+  $("timeline").innerHTML = steps.map((s, i) => {
+    const done = !!state[day].done[s.id];
+    const cls = ["step", tone(s.time), done ? "done" : "", s.id === currentId && !done ? "now" : ""].join(" ");
+    return `<li class="${cls}">
+      <span class="node" aria-hidden="true">${i + 1}</span>
+      <div class="card"><div class="card-body">
+        ${thumb(s)}
+        <div>
+          <div class="card-top"><p class="moment">${esc(s.moment)}</p><span class="time">${esc(s.time)}</span></div>
+          <h3 class="${s.name ? "" : "tbd"}">${esc(label(s))}</h3>
+          ${s.addr && !s.plus ? `<p class="addr">${esc(s.addr)}</p>` : ""}
+          ${s.booked ? `<span class="booked">✓ ${esc(s.booked)}</span>` : ""}
+          ${s.note ? `<p class="note">${esc(s.note)}</p>` : ""}
+          ${s.alert ? `<div class="alert"><strong>${esc(s.alert.title)}</strong><ul>${s.alert.items.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>` : ""}
+          <div class="actions">
+            ${hasMap && s.lat != null ? `<button type="button" class="btn primary" data-show="${s.id}">Voir sur le plan</button>`
+                                      : `<a class="btn primary" href="${mapUrl(s)}" target="_blank" rel="noopener">Google Maps</a>`}
+            ${s.name && s.id !== "parking" ? `<a class="btn ta" href="${taUrl(s)}" target="_blank" rel="noopener">TripAdvisor</a>` : ""}
+            <button type="button" class="btn" data-edit="${s.id}">Modifier</button>
+            <button type="button" class="btn check" data-done="${s.id}" aria-pressed="${done}">${done ? "Fait ✓" : "Fait ?"}</button>
+          </div>
+        </div>
+      </div></div>
+    </li>`;
+  }).join("");
+}
+
+/* =========================================================
+   Itinéraire (vendredi)
+   ========================================================= */
+let map, markerLayer, lineLayer, tiles, labelsLayer, selectedId = null;
+const markers = {};
+let legs = {};
+try { legs = JSON.parse(localStorage.getItem(ROUTE_KEY)) || {}; } catch (e) {}
+const legKey = (a, b) => [a.lat, a.lng, b.lat, b.lng].map(v => (+v).toFixed(5)).join(",");
+
+function initMap() {
+  if (map || !window.L) return;
+  map = L.map("map", { zoomControl: false, maxZoom: 16 }).setView([50.633, 3.056], 13);
+  L.control.zoom({ position: "bottomright" }).addTo(map);
+  const dark = matchMedia("(prefers-color-scheme: dark)");
+  const esri = n => `https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/${n}/MapServer/tile/{z}/{y}/{x}`;
+  const setTiles = () => {
+    if (tiles) map.removeLayer(tiles);
+    if (labelsLayer) map.removeLayer(labelsLayer);
+    const v = dark.matches ? "Dark" : "Light";
+    tiles = L.tileLayer(esri(`World_${v}_Gray_Base`), { maxZoom: 16, maxNativeZoom: 16, attribution: "Fond de carte &copy; Esri, HERE, Garmin, &copy; contributeurs OpenStreetMap" }).addTo(map);
+    labelsLayer = L.tileLayer(esri(`World_${v}_Gray_Reference`), { maxZoom: 16, maxNativeZoom: 16 }).addTo(map);
+  };
+  setTiles();
+  dark.addEventListener?.("change", () => { setTiles(); drawMap(false); });
+  markerLayer = L.layerGroup().addTo(map);
+  lineLayer = L.layerGroup().addTo(map);
+  computeLegs();
+}
+function legText(a, b) {
+  if (!a || a.lat == null || b.lat == null) return "";
+  if (b.via === "metro") return " · métro ligne 1";
+  const l = legs[legKey(a, b)];
+  return l && l.coords ? ` · ${fmtMin(l.duration)} à pied` : "";
+}
+function drawMap(fit) {
+  if (!map) return;
+  markerLayer.clearLayers(); lineLayer.clearLayers();
+  const steps = sorted(), located = steps.filter(s => s.lat != null);
+  steps.forEach((s, i) => {
+    if (s.lat == null) return;
+    const icon = L.divIcon({ className: "", iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -34],
+      html: `<div class="pin ${s.id === selectedId ? "active" : ""}" style="--c:${toneColor(s.time)}"><span>${i + 1}</span></div>` });
+    const m = L.marker([s.lat, s.lng], { icon, title: label(s) }).addTo(markerLayer);
+    m.bindPopup(`<strong>${esc(label(s))}</strong>${esc(s.time)}, ${esc(s.moment.toLowerCase())}${s.addr && !s.plus ? "<br>" + esc(s.addr) : ""}`);
+    m.on("click", () => select(s.id, false));
+    markers[s.id] = m;
+  });
+  steps.forEach((b, i) => {
+    const a = steps[i - 1];
+    if (!a || a.lat == null || b.lat == null) return;
+    const color = toneColor(b.time), leg = legs[legKey(a, b)];
+    if (b.via === "metro") {
+      L.polyline([[a.lat, a.lng], [b.lat, b.lng]], { color, weight: 4, opacity: .9, dashArray: "1 10", lineCap: "round" }).bindTooltip("Métro ligne 1", { sticky: true }).addTo(lineLayer);
+    } else if (leg && leg.coords) {
+      L.polyline(leg.coords, { color: "#fff", weight: 9, opacity: .9, lineJoin: "round" }).addTo(lineLayer);
+      L.polyline(leg.coords, { color, weight: 5, lineJoin: "round", lineCap: "round" }).bindTooltip(`${fmtMin(leg.duration)} à pied, ${fmtKm(leg.distance)}`, { sticky: true }).addTo(lineLayer);
+    } else {
+      L.polyline([[a.lat, a.lng], [b.lat, b.lng]], { color, weight: 3, opacity: .6, dashArray: "2 9" }).addTo(lineLayer);
+    }
+  });
+  if (fit && located.length) map.fitBounds(L.latLngBounds(located.map(s => [s.lat, s.lng])), { padding: [40, 40] });
+  const walked = steps.map((b, i) => i && b.via !== "metro" && steps[i - 1].lat != null && b.lat != null ? legs[legKey(steps[i - 1], b)] : null).filter(l => l && l.coords);
+  const km = walked.reduce((t, l) => t + l.distance, 0), sec = walked.reduce((t, l) => t + l.duration, 0);
+  $("map-badge").innerHTML = walked.length ? `<strong>${fmtKm(km)} à pied</strong>${fmtMin(sec)} de marche sur la journée` : `<strong>${located.length} étapes sur le plan</strong>Calcul des trajets à pied…`;
+}
+function renderSide() {
+  const steps = sorted();
+  $("side-list").innerHTML = steps.map((s, i) => {
+    const prev = steps[i - 1], open = s.id === selectedId;
+    return `<li class="${tone(s.time)}">
+      <button type="button" class="stop-btn" data-select="${s.id}" aria-current="${open}" aria-expanded="${open}">
+        <span class="num">${i + 1}</span>
+        <span class="stop-name">${esc(label(s))}<small>${esc(s.moment)}${prev ? legText(prev, s) : ""}</small></span>
+        <span class="stop-time">${esc(s.time)}</span>
+      </button>
+      ${open ? `<div class="stop-detail">
+        ${s.addr && !s.plus ? `<p class="hint">${esc(s.addr)}</p>` : ""}
+        <div class="actions">
+          <a class="btn primary" href="${mapUrl(s)}" target="_blank" rel="noopener">Google Maps</a>
+          ${s.id !== "parking" ? `<a class="btn ta" href="${taUrl(s)}" target="_blank" rel="noopener">TripAdvisor</a>` : ""}
+        </div>
+        ${prev ? `<p class="mini-title">Depuis ${esc(label(prev))}</p>
+        <div class="actions">
+          <a class="btn" href="${dirUrl(prev, s, "walking")}" target="_blank" rel="noopener">À pied</a>
+          <a class="btn" href="${dirUrl(prev, s, "transit")}" target="_blank" rel="noopener">Métro / tram</a>
+        </div>` : ""}
+        <p class="mini-title">Commerces à proximité</p>
+        <div class="chips">${["Boulangerie", "Pharmacie", "Distributeur", "Supérette", "Tabac", "Café"].map(k => `<a class="chip" href="${nearUrl(k, s)}" target="_blank" rel="noopener">${k}</a>`).join("")}</div>
+      </div>` : ""}
+    </li>`;
+  }).join("");
+}
+function select(id, fly = true) {
+  selectedId = selectedId === id && fly ? null : id;
+  renderSide(); drawMap(false);
+  const s = state[day].steps.find(x => x.id === id);
+  if (map && s && s.lat != null && selectedId) { if (fly) map.flyTo([s.lat, s.lng], 16, { duration: .8 }); markers[id]?.openPopup(); }
+  document.querySelector(`[data-select="${id}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+$("side-list").addEventListener("click", e => { const b = e.target.closest("[data-select]"); if (b) select(b.dataset.select); });
+
+let routing = false;
+async function computeLegs() {
+  if (routing) return; routing = true;
+  const steps = sorted("ven");
+  for (let i = 1; i < steps.length; i++) {
+    const a = steps[i - 1], b = steps[i];
+    if (a.lat == null || b.lat == null || b.via === "metro") continue;
+    const k = legKey(a, b);
+    if (legs[k]) continue;
+    try {
+      const r = await fetch(`https://routing.openstreetmap.de/routed-foot/route/v1/foot/${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`);
+      const route = (await r.json()).routes?.[0];
+      if (route) {
+        legs[k] = { distance: route.distance, duration: route.duration, coords: route.geometry.coordinates.map(([x, y]) => [y, x]) };
+        try { localStorage.setItem(ROUTE_KEY, JSON.stringify(legs)); } catch (e) {}
+        if (tab === "itineraire") { drawMap(false); renderSide(); }
+      }
+    } catch (e) {}
+  }
+  routing = false;
+}
+async function geocode(s) {
+  if (!s.addr && !s.name) return;
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=${enc([s.addr || s.name, "Lille"].join(", "))}`);
+    const [hit] = await r.json();
+    if (hit) { s.lat = +hit.lat; s.lng = +hit.lon; save(); if (map) { drawMap(false); renderSide(); computeLegs(); } }
+  } catch (e) {}
+}
+
+/* =========================================================
+   Bars à proximité
+   ========================================================= */
+let myPos = null, barRadius = 600, barType = "all";
+function fillFrom(reset) {
+  const sel = $("from-select"), current = reset ? null : sel.value;
+  const steps = sorted().filter(s => s.lat != null);
+  const opts = [];
+  if (myPos) opts.push(`<option value="me">Ma position</option>`);
+  opts.push(`<optgroup label="${esc(DAYS[day].label)}">${steps.map(s => `<option value="${s.id}">${esc(s.time)}, ${esc(label(s))}</option>`).join("")}</optgroup>`);
+  sel.innerHTML = opts.join("");
+  // Par défaut : l'étape en cours le jour J, sinon le point de départ prévu pour ce jour
+  const n = nowMinutes(day);
+  const live = phase(day) === "jour" ? [...steps].reverse().find(s => minutes(s.time) <= n) : null;
+  sel.value = current && [...sel.options].some(o => o.value === current) ? current : (myPos ? "me" : (live?.id || DAYS[day].barsFrom));
+}
+function origin() {
+  const v = $("from-select").value;
+  if (v === "me" && myPos) return { lat: myPos.lat, lng: myPos.lng, name: "Ma position" };
+  return state[day].steps.find(s => s.id === v) || state[day].steps.find(s => s.lat != null);
+}
+function hoursText(b) {
+  const h = b[day]; if (!h) return "";
+  return `${day === "ven" ? "Vendredi" : "Samedi"} ${hhmm(h[0])}–${hhmm(h[1])}`;
+}
+function renderBars() {
+  const o = origin();
+  const list = BARS.map(b => ({ ...b, d: meters(o, b) }))
+    .filter(b => b.d <= barRadius && (barType === "all" || b.type === barType))
+    .sort((a, b) => a.d - b.d);
+  if (!list.length) {
+    $("bar-list").innerHTML = `<div class="empty"><h3>Aucun bar dans ce rayon</h3><p>Élargissez la distance ou choisissez un autre point de départ.</p></div>`;
+    return;
+  }
+  const from = o.name === "Ma position" ? `${o.lat},${o.lng}` : place(o);
+  $("bar-list").innerHTML = list.map(b => `<article class="tile ${BAR_TONE[b.type]}">
+      <div class="tile-head">
+        <div class="thumb"><svg viewBox="0 0 48 48" aria-hidden="true">${ICONS[BAR_ICON[b.type]]}</svg></div>
+        <div><h3>${esc(b.name)}</h3><p class="where">${esc(b.label)}, ${esc(b.addr)}</p></div>
+      </div>
+      <div class="meta">
+        <span class="badge dist">${fmtKm(b.d)}, ${walkMin(b.d)} min à pied</span>
+        <span class="badge tone">${hoursText(b)}</span>
+      </div>
+      <p class="desc">${esc(b.desc)}</p>
+      <div class="actions">
+        <a class="btn ta" href="https://www.tripadvisor.fr/Search?q=${enc(b.name + " Lille")}" target="_blank" rel="noopener">TripAdvisor</a>
+        <a class="btn primary" href="https://www.google.com/maps/dir/?api=1&origin=${enc(from)}&destination=${enc(b.name + ", " + b.addr + ", Lille")}&travelmode=walking" target="_blank" rel="noopener">Y aller à pied</a>
+      </div>
+    </article>`).join("");
+}
+$("from-select").addEventListener("change", renderBars);
+$("radius").addEventListener("click", e => {
+  const b = e.target.closest("[data-r]"); if (!b) return;
+  barRadius = +b.dataset.r;
+  $("radius").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderBars();
+});
+$("bar-types").addEventListener("click", e => {
+  const b = e.target.closest("[data-t]"); if (!b) return;
+  barType = b.dataset.t;
+  $("bar-types").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderBars();
+});
+$("locate").addEventListener("click", () => {
+  const msg = $("geo-msg");
+  if (!navigator.geolocation) { msg.textContent = "La localisation n’est pas disponible sur cet appareil."; return; }
+  msg.textContent = "Recherche de votre position…";
+  navigator.geolocation.getCurrentPosition(p => {
+    myPos = { lat: p.coords.latitude, lng: p.coords.longitude };
+    msg.textContent = "";
+    fillFrom(true); renderBars();
+  }, err => {
+    msg.textContent = err.code === 1
+      ? "Localisation refusée. Autorisez-la dans les réglages du navigateur, ou choisissez une étape dans la liste."
+      : "Position introuvable pour le moment. Choisissez une étape dans la liste.";
+  }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+});
+
+/* =========================================================
+   Activités
+   ========================================================= */
+let actCat = "all";
+function renderActivities() {
+  $("activity-list").innerHTML = ACTIVITIES.filter(a => actCat === "all" || a.cat === actCat).map(a => {
+    const maps = "https://www.google.com/maps/search/?api=1&query=" + enc(a.q + (a.far ? "" : ", Lille"));
+    const reserved = a.reservedOn === "sam";
+    return `<article class="tile ${a.tone}">
+      <div class="tile-head">
+        <div class="thumb"><svg viewBox="0 0 48 48" aria-hidden="true">${ICONS[a.icon]}</svg></div>
+        <div><h3>${esc(a.name)}</h3><p class="where">${esc(a.where)}</p></div>
+      </div>
+      <div class="meta">
+        ${reserved ? `<span class="booked" style="margin:0">✓ Réservé samedi à 11h</span>` : ""}
+        <span class="badge tone">${esc(a.when)}</span><span class="badge">${esc(a.price)}</span>
+      </div>
+      <p class="desc">${esc(a.desc)}</p>
+      <div class="actions">
+        ${a.link && !reserved ? `<a class="btn primary" href="${a.link}" target="_blank" rel="noopener">${a.linkLabel || "Site officiel"}</a>` : ""}
+        <a class="btn" href="${maps}" target="_blank" rel="noopener">Plan</a>
+      </div>
+    </article>`;
+  }).join("");
+}
+$("act-types").addEventListener("click", e => {
+  const b = e.target.closest("[data-c]"); if (!b) return;
+  actCat = b.dataset.c;
+  $("act-types").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+  renderActivities();
+});
+
+/* =========================================================
+   Modifier une étape
+   ========================================================= */
+const dlg = $("editor"), form = $("edit-form");
+let editingId = null;
+$("timeline").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.done) { state[day].done[b.dataset.done] = !state[day].done[b.dataset.done]; save(); renderTiming(); renderStatus(); }
+  if (b.dataset.show) { go(day, "itineraire"); setTimeout(() => { selectedId = null; select(b.dataset.show); }, 150); }
+  if (b.dataset.edit) {
+    const s = state[day].steps.find(x => x.id === b.dataset.edit);
+    editingId = s.id;
+    $("edit-title").textContent = s.moment;
+    form.time.value = s.time; form.name.value = s.name; form.addr.value = s.addr; form.note.value = s.note || ""; form.photo.value = s.photo || "";
+    dlg.showModal(); form.name.focus();
+  }
+});
+dlg.addEventListener("close", () => {
+  if (dlg.returnValue === "save" && editingId) {
+    const s = state[day].steps.find(x => x.id === editingId);
+    const moved = s.addr !== form.addr.value.trim() || s.name !== form.name.value.trim();
+    s.time = form.time.value || s.time;
+    s.name = form.name.value.trim(); s.addr = form.addr.value.trim(); s.note = form.note.value.trim(); s.photo = form.photo.value.trim();
+    if (moved) { delete s.lat; delete s.lng; delete s.plus; delete s.mapLink; delete s.ta; }
+    save(); renderTiming(); renderStatus();
+    if (moved) geocode(s);
+  }
+  editingId = null;
+});
+$("reset").addEventListener("click", () => {
+  if (confirm(`Effacer vos modifications du ${DAYS[day].label.toLowerCase()} et revenir au planning d’origine ?`)) {
+    state[day] = freshDay(day); selectedId = null; save(); show(day, tab);
+  }
+});
+
+/* =========================================================
+   Démarrage
+   ========================================================= */
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+show(...fromHash());
+setInterval(() => {
+  if (dlg.open) return;
+  renderStatus();
+  if (tab === "timing") renderTiming();
+}, 30000);
+</script>
+</body>
+</html>

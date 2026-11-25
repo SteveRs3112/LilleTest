@@ -1,0 +1,17 @@
+{
+  "name": "Lille · vendredi 4 décembre",
+  "short_name": "Lille",
+  "description": "Planning de la journée à Lille, itinéraire, restos et activités.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0826",
+  "theme_color": "#0B0826",
+  "lang": "fr",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
